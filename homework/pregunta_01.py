@@ -71,3 +71,74 @@ def pregunta_01():
 
 
     """
+
+import os
+import zipfile
+import pandas as pd
+
+def descomprimir_archivo():
+    """
+    Descomprime el archivo input.zip y crea la estructura de carpetas requerida.
+    """
+    zip_path = os.path.abspath("files/input.zip")
+    extract_path = os.path.abspath("files")  # Extraer directamente en 'files/'
+    
+    if not os.path.exists(zip_path):
+        raise FileNotFoundError(f"El archivo {zip_path} no existe.")
+
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_path)
+
+def procesar_directorio(base_path, sentiment_labels):
+    """
+    Procesa los archivos en un directorio base y devuelve un DataFrame con las frases y sentimientos.
+    """
+    data = []
+    for sentiment in sentiment_labels:
+        dir_path = os.path.join(base_path, sentiment)
+        if not os.path.exists(dir_path):
+            raise FileNotFoundError(f"El directorio {dir_path} no existe. Verifica la descomposición del archivo ZIP.")
+        
+        for file_name in os.listdir(dir_path):
+            file_path = os.path.join(dir_path, file_name)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                phrase = file.read().strip()
+                data.append({"phrase": phrase, "target": sentiment})
+    return pd.DataFrame(data)
+
+def generar_datasets():
+    """
+    Genera los archivos train_dataset.csv y test_dataset.csv a partir de la estructura de archivos descomprimida.
+    """
+    # Directorios de entrada
+    train_path = os.path.abspath("files/input/train")
+    test_path = os.path.abspath("files/input/test")
+    sentiment_labels = ["negative", "positive", "neutral"]
+
+    # Verificar que los directorios existen antes de procesar
+    if not os.path.exists(train_path):
+        raise FileNotFoundError(f"El directorio {train_path} no existe.")
+    if not os.path.exists(test_path):
+        raise FileNotFoundError(f"El directorio {test_path} no existe.")
+
+    # Procesar datasets
+    train_df = procesar_directorio(train_path, sentiment_labels)
+    test_df = procesar_directorio(test_path, sentiment_labels)
+
+    # Crear directorio de salida si no existe
+    output_dir = os.path.abspath("files/output")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Guardar los DataFrames en archivos CSV
+    train_df.to_csv(os.path.join(output_dir, "train_dataset.csv"), index=False)
+    test_df.to_csv(os.path.join(output_dir, "test_dataset.csv"), index=False)
+
+def pregunta_01():
+    """
+    Ejecuta las tareas para descomprimir el archivo y generar los datasets.
+    """
+    descomprimir_archivo()
+    generar_datasets()
+
+# Para ejecutar:
+# pregunta_01()
